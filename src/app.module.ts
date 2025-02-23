@@ -1,3 +1,4 @@
+// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -13,15 +14,19 @@ import { Schedule } from './schedule/entities/schedule.entity';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.get('DATABASE_URL'),
-        entities: [User, Schedule],
-        synchronize: true,
-        ssl: {
-          rejectUnauthorized: false
-        }
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const dbUrl = configService.get<string>('DATABASE_URL');
+
+        return {
+          type: 'postgres',
+          url: 'postgresql://postgres:mMdADXghquHUYojwBwpMbpOrfUuksDBQ@switchyard.proxy.rlwy.net:17806/railway',
+          entities: [User, Schedule],
+          synchronize: true,
+          ssl: {
+            rejectUnauthorized: false
+          }
+        };
+      },
       inject: [ConfigService],
     }),
     AuthModule,
