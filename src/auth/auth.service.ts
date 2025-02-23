@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
-import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -39,17 +38,20 @@ export class AuthService implements OnModuleInit {
         }
     }
 
-    async validateUser(email: string, password: string): Promise<any> {
-        const user = await this.userRepository.findOne({ where: { email } });
-        if (user && await bcrypt.compare(password, user.password)) {
+    async validateUser(loginDto: { email: string; password: string }) {
+        const user = await this.userRepository.findOne({
+            where: { email: loginDto.email },
+        });
+
+        if (user && await bcrypt.compare(loginDto.password, user.password)) {
             const { password, ...result } = user;
             return result;
         }
         return null;
     }
 
-    async login(loginDto: LoginDto) {
-        const user = await this.validateUser(loginDto.email, loginDto.password);
+    async login(loginDto: { email: string; password: string }) {
+        const user = await this.validateUser(loginDto);
         if (!user) {
             return { success: false, message: '로그인 실패' };
         }
@@ -64,30 +66,5 @@ export class AuthService implements OnModuleInit {
                 name: user.name,
             },
         };
-    }
-
-    async autoLogin(token: string) {
-        try {
-            const payload = this.jwtService.verify(token);
-            const user = await this.userRepository.findOne({
-                where: { id: payload.sub },
-            });
-
-            if (!user) {
-                return { success: false, message: '사용자를 찾을 수 없습니다.' };
-            }
-
-            return {
-                success: true,
-                access_token: token,
-                user: {
-                    id: user.id,
-                    email: user.email,
-                    name: user.name,
-                },
-            };
-        } catch (error) {
-            return { success: false, message: '자동 로그인 실패' };
-        }
     }
 }

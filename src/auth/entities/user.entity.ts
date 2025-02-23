@@ -1,4 +1,3 @@
-// src/auth/entities/user.entity.ts
 import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Schedule } from '../../schedule/entities/schedule.entity';
 
