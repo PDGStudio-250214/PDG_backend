@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from './schedule/schedule.module';
+import { User } from './auth/entities/user.entity';
+import { Schedule } from './schedule/entities/schedule.entity';
 
 @Module({
   imports: [
@@ -14,14 +16,22 @@ import { ScheduleModule } from './schedule/schedule.module';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get('PGHOST', 'localhost'),
-        port: parseInt(configService.get('PGPORT', '5432')),
-        username: configService.get('PGUSER', 'postgres'),
-        password: configService.get('PGPASSWORD', 'postgres'),
-        database: configService.get('PGDATABASE', 'schedule_db'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        url: process.env.DATABASE_URL || configService.get('DATABASE_URL'),
+        host: configService.get('PGHOST'),
+        port: parseInt(configService.get('PGPORT')),
+        username: configService.get('PGUSER'),
+        password: configService.get('PGPASSWORD'),
+        database: configService.get('PGDATABASE'),
+        entities: [User, Schedule],
         synchronize: true,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        ssl: {
+          rejectUnauthorized: false
+        },
+        extra: {
+          ssl: {
+            rejectUnauthorized: false
+          }
+        }
       }),
       inject: [ConfigService],
     }),
