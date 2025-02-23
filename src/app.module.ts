@@ -12,22 +12,17 @@ import { ScheduleModule } from './schedule/schedule.module';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
-        const port = configService.get<number>('DB_PORT');
-        if (!port) {
-          throw new Error('DB_PORT is not defined');
-        }
-        return {
-          type: 'postgres',
-          host: configService.get('DB_HOST'),
-          port: port,
-          username: configService.get('DB_USERNAME'),
-          password: configService.get('DB_PASSWORD'),
-          database: configService.get('DB_DATABASE'),
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: true,
-        };
-      },
+      useFactory: async (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get('POSTGRES_HOST', 'localhost'),
+        port: parseInt(configService.get('POSTGRES_PORT', '5432')),
+        username: configService.get('POSTGRES_USER', 'postgres'),
+        password: configService.get('POSTGRES_PASSWORD', 'postgres'),
+        database: configService.get('POSTGRES_DATABASE', 'schedule_db'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: true, // 주의: 프로덕션에서는 false로 설정해야 합니다
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      }),
       inject: [ConfigService],
     }),
     AuthModule,
