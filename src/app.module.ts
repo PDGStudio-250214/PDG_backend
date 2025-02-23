@@ -14,25 +14,28 @@ import { Schedule } from './schedule/entities/schedule.entity';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        type: 'postgres',
-        url: process.env.DATABASE_URL || configService.get('DATABASE_URL'),
-        host: configService.get('PGHOST'),
-        port: parseInt(configService.get('PGPORT')),
-        username: configService.get('PGUSER'),
-        password: configService.get('PGPASSWORD'),
-        database: configService.get('PGDATABASE'),
-        entities: [User, Schedule],
-        synchronize: true,
-        ssl: {
-          rejectUnauthorized: false
-        },
-        extra: {
+      useFactory: async (configService: ConfigService) => {
+        const port = configService.get('PGPORT');
+        return {
+          type: 'postgres',
+          url: configService.get<string>('DATABASE_URL'),
+          host: configService.get<string>('PGHOST', 'localhost'),
+          port: port ? parseInt(port) : 5432,
+          username: configService.get<string>('PGUSER', 'postgres'),
+          password: configService.get<string>('PGPASSWORD', 'postgres'),
+          database: configService.get<string>('PGDATABASE', 'schedule_db'),
+          entities: [User, Schedule],
+          synchronize: true,
           ssl: {
             rejectUnauthorized: false
+          },
+          extra: {
+            ssl: {
+              rejectUnauthorized: false
+            }
           }
-        }
-      }),
+        };
+      },
       inject: [ConfigService],
     }),
     AuthModule,
