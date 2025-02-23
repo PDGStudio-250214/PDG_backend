@@ -1,4 +1,5 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+// src/auth/auth.service.ts
+import { Injectable, OnModuleInit, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -66,5 +67,34 @@ export class AuthService implements OnModuleInit {
                 name: user.name,
             },
         };
+    }
+
+    // 자동 로그인 함수 추가
+    async autoLogin(token: string) {
+        try {
+            const decoded = this.jwtService.verify(token);
+            const user = await this.userRepository.findOne({
+                where: { id: decoded.sub }
+            });
+
+            if (!user) {
+                throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+            }
+
+            return {
+                success: true,
+                access_token: token,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                },
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: '자동 로그인 실패'
+            };
+        }
     }
 }
