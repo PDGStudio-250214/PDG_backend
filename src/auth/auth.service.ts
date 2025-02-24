@@ -19,7 +19,7 @@ export class AuthService implements OnModuleInit {
         const defaultUsers = [
             { email: 'pizza@test.com', name: 'pizza' },
             { email: '1bfish106@test.com', name: '1bfish106' },
-            { email: 'dollyn@test.com', name: 'dollyn' },
+            { email: 'dollyn@test.com', name: 'hosk2014' },
         ];
 
         const hashedPassword = await bcrypt.hash('1234', 10);

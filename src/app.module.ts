@@ -4,9 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from './schedule/schedule.module';
-import { HealthController } from './health/health.controller';
-import { User } from './auth/entities/user.entity';
-import { Schedule } from './schedule/entities/schedule.entity';
+import { TransactionModule } from './transaction/transaction.module';
 
 @Module({
   imports: [
@@ -15,20 +13,32 @@ import { Schedule } from './schedule/entities/schedule.entity';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        type: 'postgres',
-        url: 'postgresql://postgres:mMdADXghquHUYojwBwpMbpOrfUuksDBQ@switchyard.proxy.rlwy.net:17806/railway',
-        entities: [User, Schedule],
-        synchronize: true,
-        ssl: {
-          rejectUnauthorized: false
+      useFactory: async (configService: ConfigService) => {
+        const baseConfig = {
+          type: 'postgres' as const,
+          url: configService.get<string>('LOCAL_URL'),
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          synchronize: true,
+        };
+
+        // 개발 환경
+        if (process.env.NODE_ENV !== 'production') {
+          return baseConfig;
         }
-      }),
+
+        // 프로덕션 환경
+        return {
+          ...baseConfig,
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     AuthModule,
     ScheduleModule,
+    TransactionModule,
   ],
-  controllers: [HealthController],
 })
 export class AppModule {}
