@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { ScheduleModule } from './schedule/schedule.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { HealthController } from './health/health.controller';
 
 @Module({
   imports: [
@@ -13,32 +14,21 @@ import { TransactionModule } from './transaction/transaction.module';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
-        const baseConfig = {
-          type: 'postgres' as const,
-          url: configService.get<string>('LOCAL_URL'),
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: true,
-        };
-
-        // 개발 환경
-        if (process.env.NODE_ENV !== 'production') {
-          return baseConfig;
-        }
-
-        // 프로덕션 환경
-        return {
-          ...baseConfig,
-          ssl: {
-            rejectUnauthorized: false,
-          },
-        };
-      },
+      useFactory: async (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.get('DATABASE_URL'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: true,
+        ssl: process.env.NODE_ENV === 'production' ? {
+          rejectUnauthorized: false,
+        } : false
+      }),
       inject: [ConfigService],
     }),
     AuthModule,
     ScheduleModule,
     TransactionModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}
