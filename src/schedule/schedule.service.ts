@@ -26,20 +26,31 @@ export class ScheduleService {
         const schedules = await this.scheduleRepository.find({
             where: { user: { id: userId } },
             order: { startDate: 'ASC' },
+            relations: ['user'], // 사용자 정보 포함
         });
-        return { schedules };
+        return schedules;
+    }
+
+    // 모든 사용자의 일정 조회 메서드 추가
+    async findAllSchedules() {
+        const schedules = await this.scheduleRepository.find({
+            order: { startDate: 'ASC' },
+            relations: ['user'], // 사용자 정보 포함
+        });
+        return schedules;
     }
 
     async findOne(userId: number, id: number) {
         const schedule = await this.scheduleRepository.findOne({
             where: { id, user: { id: userId } },
+            relations: ['user'], // 사용자 정보 포함
         });
 
         if (!schedule) {
             throw new NotFoundException('일정을 찾을 수 없습니다.');
         }
 
-        return { schedule };
+        return schedule;
     }
 
     async update(userId: number, id: number, updateScheduleDto: UpdateScheduleDto) {
@@ -54,6 +65,7 @@ export class ScheduleService {
         await this.scheduleRepository.update(id, updateScheduleDto);
         const updatedSchedule = await this.scheduleRepository.findOne({
             where: { id },
+            relations: ['user'], // 사용자 정보 포함
         });
 
         return { message: '일정이 수정되었습니다.', schedule: updatedSchedule };

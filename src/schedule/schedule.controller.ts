@@ -9,8 +9,9 @@ import {
     Param,
     UseGuards,
     Request,
+    Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ScheduleService } from './schedule.service';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
@@ -29,8 +30,15 @@ export class ScheduleController {
     }
 
     @Get()
-    findAll(@Request() req) {
-        return this.scheduleService.findAll(req.user.userId);
+    @ApiQuery({ name: 'all', required: false, type: Boolean })
+    findAll(@Request() req, @Query('all') all: string) {
+        // all 파라미터가 'true'이면 모든 일정 조회
+        const showAll = all === 'true';
+        if (showAll) {
+            return this.scheduleService.findAllSchedules();
+        } else {
+            return this.scheduleService.findAll(req.user.userId);
+        }
     }
 
     @Get(':id')
