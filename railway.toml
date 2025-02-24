@@ -4,7 +4,7 @@ buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm run start:prod"
-healthcheckPath = "/"
-healthcheckTimeout = 100
+healthcheckPath = "/auth/login"
+healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 numReplicas = 1
