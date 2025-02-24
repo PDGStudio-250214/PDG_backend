@@ -14,27 +14,31 @@ export class AuthService implements OnModuleInit {
         private readonly jwtService: JwtService,
     ) {}
 
+    // src/auth/auth.service.ts의 onModuleInit 메서드
     async onModuleInit() {
         // 초기 사용자 데이터 생성
         const defaultUsers = [
             { email: 'pizza@test.com', name: 'pizza' },
             { email: '1bfish106@test.com', name: '1bfish106' },
-            { email: 'dollyn@test.com', name: 'hosk2014' },
+            { email: 'hosk2014@test.com', name: 'hosk2014' }
         ];
 
         const hashedPassword = await bcrypt.hash('1234', 10);
 
         for (const userData of defaultUsers) {
-            const existingUser = await this.userRepository.findOne({
-                where: { email: userData.email },
-            });
+            try {
+                // 기존 사용자가 있다면 삭제
+                await this.userRepository.delete({ email: userData.email });
 
-            if (!existingUser) {
+                // 새로운 사용자 생성
                 const user = this.userRepository.create({
                     ...userData,
                     password: hashedPassword,
                 });
                 await this.userRepository.save(user);
+                console.log(`Created/Updated user: ${userData.email}`);
+            } catch (error) {
+                console.error(`Error creating user ${userData.email}:`, error);
             }
         }
     }
@@ -96,5 +100,13 @@ export class AuthService implements OnModuleInit {
                 message: '자동 로그인 실패'
             };
         }
+    }
+
+    // src/auth/auth.service.ts에 메서드 추가
+    async findAllUsers() {
+        const users = await this.userRepository.find({
+            select: ['id', 'email', 'name'] // 비밀번호는 제외
+        });
+        return users;
     }
 }
