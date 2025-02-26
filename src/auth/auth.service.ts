@@ -1,5 +1,5 @@
 // src/auth/auth.service.ts
-import { Injectable, OnModuleInit, UnauthorizedException } from '@nestjs/common';
+import {Injectable, NotFoundException, OnModuleInit, UnauthorizedException} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -135,5 +135,23 @@ export class AuthService implements OnModuleInit {
         }
 
         return { message: '사용자 이름 업데이트 완료' };
+    }
+
+    // src/auth/auth.service.ts에 추가
+    async findUserById(userId: number) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+
+        if (!user) {
+            throw new NotFoundException('사용자를 찾을 수 없습니다.');
+        }
+
+        return {
+            success: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name
+            }
+        };
     }
 }
