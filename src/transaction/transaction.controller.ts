@@ -3,6 +3,7 @@ import {
     Controller,
     Get,
     Post,
+    Put,
     Delete,
     Body,
     Param,
@@ -44,6 +45,15 @@ export class TransactionController {
     @Get(':id')
     findOne(@Request() req, @Param('id') id: string) {
         return this.transactionService.findOne(req.user.userId, +id);
+    }
+
+    @Put(':id')
+    update(
+        @Request() req,
+        @Param('id') id: string,
+        @Body() updateTransactionDto: CreateTransactionDto,
+    ) {
+        return this.transactionService.update(req.user.userId, +id, updateTransactionDto);
     }
 
     @Delete(':id')

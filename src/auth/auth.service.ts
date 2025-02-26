@@ -16,29 +16,42 @@ export class AuthService implements OnModuleInit {
 
     // src/auth/auth.service.ts의 onModuleInit 메서드
     async onModuleInit() {
-        // 초기 사용자 데이터 생성
-        const defaultUsers = [
-            { email: 'pizza@test.com', name: 'pizza' },
-            { email: '1bfish106@test.com', name: '1bfish106' },
-            { email: 'hosk2014@test.com', name: 'hosk2014' }
+        // 기본 사용자 생성
+        const users = [
+            {
+                email: 'pizza@test.com',
+                password: '1234',
+                name: '승혜'
+            },
+            {
+                email: '1bfish106@test.com',
+                password: '1234',
+                name: '가연'
+            },
+            {
+                email: 'hosk2014@test.com',
+                password: '1234',
+                name: '석린'
+            }
         ];
 
-        const hashedPassword = await bcrypt.hash('1234', 10);
+        for (const userData of users) {
+            const existingUser = await this.userRepository.findOne({
+                where: { email: userData.email }
+            });
 
-        for (const userData of defaultUsers) {
-            try {
-                // 기존 사용자가 있다면 삭제
-                await this.userRepository.delete({ email: userData.email });
+            if (!existingUser) {
+                // 비밀번호 해시화
+                const hashedPassword = await bcrypt.hash(userData.password, 10);
 
-                // 새로운 사용자 생성
-                const user = this.userRepository.create({
-                    ...userData,
+                // 사용자 생성 및 저장
+                await this.userRepository.save({
+                    email: userData.email,
                     password: hashedPassword,
+                    name: userData.name
                 });
-                await this.userRepository.save(user);
-                console.log(`Created/Updated user: ${userData.email}`);
-            } catch (error) {
-                console.error(`Error creating user ${userData.email}:`, error);
+
+                console.log(`사용자 생성됨: ${userData.email} (${userData.name})`);
             }
         }
     }
@@ -108,5 +121,19 @@ export class AuthService implements OnModuleInit {
             select: ['id', 'email', 'name'] // 비밀번호는 제외
         });
         return users;
+    }
+
+    async updateUserNames() {
+        const namesMap = {
+            'pizza@test.com': '승혜',
+            '1bfish106@test.com': '가연',
+            'hosk2014@test.com': '석린'
+        };
+
+        for (const [email, name] of Object.entries(namesMap)) {
+            await this.userRepository.update({ email }, { name });
+        }
+
+        return { message: '사용자 이름 업데이트 완료' };
     }
 }

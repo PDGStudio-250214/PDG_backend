@@ -22,4 +22,12 @@ export class AuthController {
     async findAllUsers() {
         return this.authService.findAllUsers();
     }
+
+
+
+    // auth.controller.ts에 추가
+    @Post('update-names')
+    async updateUserNames() {
+        return this.authService.updateUserNames();
+    }
 }

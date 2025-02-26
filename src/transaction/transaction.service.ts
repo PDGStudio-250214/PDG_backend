@@ -2,9 +2,10 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Transaction } from './entities/transaction.entity';
+import { Transaction, TransactionType } from './entities/transaction.entity';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { TransactionFilterDto } from './dto/transaction-filter.dto';
+import { User } from '../auth/entities/user.entity';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
@@ -13,13 +14,22 @@ export class TransactionService {
     constructor(
         @InjectRepository(Transaction)
         private transactionRepository: Repository<Transaction>,
+        @InjectRepository(User)
+        private userRepository: Repository<User>,
     ) {}
 
     async create(userId: number, createTransactionDto: CreateTransactionDto, receipt?: Express.Multer.File) {
-        // hosk2014 사용자만 거래내역 생성 가능
-        const email = 'hosk2014@test.com'; // 실제로는 user 테이블에서 조회
-        if (email !== 'hosk2014@test.com') {
-            throw new ForbiddenException('권한이 없습니다.');
+        // hosk2014 사용자 ID 확인
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+
+        // user가 null인 경우 처리
+        if (!user) {
+            throw new NotFoundException('사용자를 찾을 수 없습니다.');
+        }
+
+        // 오직 hosk2014@test.com 계정만 거래 내역을 추가/수정 가능
+        if (user.email !== 'hosk2014@test.com') {
+            throw new ForbiddenException('금융 내역을 추가할 권한이 없습니다.');
         }
 
         const transaction = this.transactionRepository.create({
@@ -40,11 +50,28 @@ export class TransactionService {
         return await this.transactionRepository.save(transaction);
     }
 
-    async findAll(userId: number, filterDto: TransactionFilterDto) {
-        const query = this.transactionRepository
-            .createQueryBuilder('transaction')
-            .where('transaction.userId = :userId', { userId });
+    async update(userId: number, id: number, updateTransactionDto: CreateTransactionDto) {
+        // hosk2014 사용자 확인
+        const user = await this.userRepository.findOne({ where: { id: userId } });
 
+        if (!user) {
+            throw new NotFoundException('사용자를 찾을 수 없습니다.');
+        }
+
+        if (user.email !== 'hosk2014@test.com') {
+            throw new ForbiddenException('금융 내역을 수정할 권한이 없습니다.');
+        }
+
+        const transaction = await this.findOne(userId, id);
+        const updated = this.transactionRepository.merge(transaction, updateTransactionDto);
+        return await this.transactionRepository.save(updated);
+    }
+
+    async findAll(userId: number, filterDto: TransactionFilterDto) {
+        const query = this.transactionRepository.createQueryBuilder('transaction')
+            .leftJoinAndSelect('transaction.user', 'user');
+
+        // 필터링 적용
         if (filterDto.type) {
             query.andWhere('transaction.type = :type', { type: filterDto.type });
         }
@@ -56,12 +83,14 @@ export class TransactionService {
             });
         }
 
+        // 모든 사용자가 모든 내역을 볼 수 있음
         return await query.getMany();
     }
 
     async findOne(userId: number, id: number) {
         const transaction = await this.transactionRepository.findOne({
-            where: { id, user: { id: userId } }
+            where: { id },
+            relations: ['user']
         });
 
         if (!transaction) {
@@ -72,6 +101,17 @@ export class TransactionService {
     }
 
     async remove(userId: number, id: number) {
+        // hosk2014 사용자 확인
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+
+        if (!user) {
+            throw new NotFoundException('사용자를 찾을 수 없습니다.');
+        }
+
+        if (user.email !== 'hosk2014@test.com') {
+            throw new ForbiddenException('금융 내역을 삭제할 권한이 없습니다.');
+        }
+
         const transaction = await this.findOne(userId, id);
         if (transaction.receipt) {
             const filepath = path.join(process.cwd(), 'uploads', transaction.receipt);
