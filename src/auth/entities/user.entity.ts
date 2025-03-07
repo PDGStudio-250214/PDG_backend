@@ -1,7 +1,8 @@
 // src/auth/entities/user.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Schedule } from '../../schedule/entities/schedule.entity';
 import { Transaction } from '../../transaction/entities/transaction.entity';
+import { Exclude } from 'class-transformer';
 
 @Entity()
 export class User {
@@ -11,21 +12,27 @@ export class User {
     @Column({ unique: true })
     email: string;
 
+    @Column({ nullable: true })
+    name: string;
+
+    @Exclude()
     @Column()
     password: string;
 
-    @Column()
-    name: string;
+    @Column({ nullable: true })
+    profileImageUrl: string;
 
-    @CreateDateColumn()
-    createdAt: Date;
+    @Column({ nullable: true })
+    bio: string;
 
-    @UpdateDateColumn()
-    updatedAt: Date;
+    @Column({ default: false })
+    isAdmin: boolean;
 
-    @OneToMany(() => Schedule, schedule => schedule.user)
+    @OneToMany(() => Schedule, (schedule) => schedule.user)
     schedules: Schedule[];
 
-    @OneToMany(() => Transaction, transaction => transaction.user)
+    @OneToMany(() => Transaction, (transaction) => transaction.user)
     transactions: Transaction[];
+
+
 }

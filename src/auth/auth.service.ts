@@ -14,7 +14,7 @@ export class AuthService implements OnModuleInit {
         private readonly jwtService: JwtService,
     ) {}
 
-    // src/auth/auth.service.ts의 onModuleInit 메서드
+    // 기존 메서드들
     async onModuleInit() {
         // 기본 사용자 생성
         const users = [
@@ -86,7 +86,6 @@ export class AuthService implements OnModuleInit {
         };
     }
 
-    // 자동 로그인 함수 추가
     async autoLogin(token: string) {
         try {
             const decoded = this.jwtService.verify(token);
@@ -115,7 +114,22 @@ export class AuthService implements OnModuleInit {
         }
     }
 
-    // src/auth/auth.service.ts에 메서드 추가
+    // 원래 이름이 findUserById였지만, getUserById로 변경
+    async getUserById(userId: number) {
+        const user = await this.userRepository.findOne({
+            where: { id: userId }
+        });
+
+        if (!user) {
+            throw new NotFoundException(`ID가 ${userId}인 사용자를 찾을 수 없습니다.`);
+        }
+
+        // 비밀번호 제외
+        const { password, ...result } = user;
+        return result;
+    }
+
+    // 기존 메서드 유지
     async findAllUsers() {
         const users = await this.userRepository.find({
             select: ['id', 'email', 'name'] // 비밀번호는 제외
@@ -123,6 +137,7 @@ export class AuthService implements OnModuleInit {
         return users;
     }
 
+    // 기존 메서드 유지
     async updateUserNames() {
         const namesMap = {
             'pizza@test.com': '승혜',
@@ -137,21 +152,71 @@ export class AuthService implements OnModuleInit {
         return { message: '사용자 이름 업데이트 완료' };
     }
 
-    // src/auth/auth.service.ts에 추가
+    // 기존 메서드 이름 변경 (findUserById -> getUserById로 변경됨)
     async findUserById(userId: number) {
+        return this.getUserById(userId);
+    }
+
+    // 새로운 메서드들 추가
+    async getPublicUserProfile(userId: number) {
         const user = await this.userRepository.findOne({ where: { id: userId } });
 
         if (!user) {
-            throw new NotFoundException('사용자를 찾을 수 없습니다.');
+            throw new NotFoundException(`ID가 ${userId}인 사용자를 찾을 수 없습니다.`);
         }
 
+        // 공개 프로필에는 제한된 정보만 포함
         return {
-            success: true,
-            user: {
-                id: user.id,
-                email: user.email,
-                name: user.name
-            }
+            id: user.id,
+            name: user.name,
+            profileImageUrl: user.profileImageUrl
         };
+    }
+
+    async updateUserProfile(userId: number, updateData: any) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+
+        if (!user) {
+            throw new NotFoundException(`ID가 ${userId}인 사용자를 찾을 수 없습니다.`);
+        }
+
+        // DTO에서 제공된 필드만 업데이트
+        if (updateData.name !== undefined) {
+            user.name = updateData.name;
+        }
+        if (updateData.profileImageUrl !== undefined) {
+            user.profileImageUrl = updateData.profileImageUrl;
+        }
+        if (updateData.bio !== undefined) {
+            user.bio = updateData.bio;
+        }
+
+        await this.userRepository.save(user);
+
+        // 비밀번호 제외하고 응답
+        const { password, ...result } = user;
+        return result;
+    }
+
+    async updateUserPassword(userId: number, currentPassword: string, newPassword: string) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+
+        if (!user) {
+            throw new NotFoundException(`ID가 ${userId}인 사용자를 찾을 수 없습니다.`);
+        }
+
+        // 현재 비밀번호 확인
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            throw new Error('현재 비밀번호가 올바르지 않습니다.');
+        }
+
+        // 새 비밀번호로 업데이트
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+
+        await this.userRepository.save(user);
+
+        return { success: true, message: '비밀번호가 성공적으로 변경되었습니다.' };
     }
 }
