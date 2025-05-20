@@ -30,5 +30,6 @@ import { HealthController } from './health/health.controller';
     TransactionModule,
   ],
   controllers: [HealthController],
+  providers: [], // 필요하다면 여기에 서비스 추가
 })
 export class AppModule {}
