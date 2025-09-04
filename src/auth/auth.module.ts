@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { User } from './entities/user.entity';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './jwt.strategy';
+import {UserController} from "./user.controller";
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { JwtStrategy } from './jwt.strategy';
       }),
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, UserController], // UserController 추가
   providers: [AuthService, JwtStrategy],
 })
 export class AuthModule {}
